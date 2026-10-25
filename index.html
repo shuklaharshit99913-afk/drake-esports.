@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DRAKE ESPORTS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #09090b; --bg-card: #18181b; --bg-glass: rgba(24, 24, 27, 0.95);
+            --text-white: #fafafa; --text-gray: #a1a1aa; --border: #27272a;
+            --primary: #6366f1; --primary-grad: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            --success: #10b981; --danger: #ef4444; --gold: #fbbf24; --silver: #e2e8f0; --bronze: #b45309;
+        }
+        body.light-mode {
+            --bg-dark: #f3f4f6; --bg-card: #ffffff; --bg-glass: rgba(255, 255, 255, 0.95);
+            --text-white: #111827; --text-gray: #4b5563; --border: #e5e7eb;
+        }
+        body.midnight-mode {
+            --bg-dark: #0f172a; --bg-card: #1e293b; --bg-glass: rgba(15, 23, 42, 0.95);
+            --text-white: #f8fafc; --text-gray: #94a3b8; --border: #334155;
+            --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Outfit', sans-serif; -webkit-tap-highlight-color:transparent; }
+        body { background: var(--bg-dark); color: var(--text-white); display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; transition: background 0.3s; }
+        .hidden { display: none !important; }
+
+        .app-container { width: 100%; max-width: 480px; background: var(--bg-dark); min-height: 100vh; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.5); padding-bottom: 90px; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+
+        .btn { border:none; outline:none; cursor:pointer; border-radius:12px; font-weight:600; font-size:14px; transition: 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; padding: 14px 20px; text-decoration: none; }
+        .btn:active { transform:scale(0.96); }
+        .btn-primary { background: var(--primary-grad); color: white; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-gray); }
+        .btn-full { width: 100%; }
+
+        .inp { width:100%; padding:14px; background: var(--bg-card); border:1px solid var(--border); border-radius:12px; color:var(--text-white); margin-bottom:15px; outline:none; font-size: 14px; transition: border 0.3s; }
+        .inp:focus { border-color: var(--primary); }
+        .inp:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .header { background: var(--bg-glass); padding: 15px 20px; position: sticky; top: 0; z-index: 50; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); backdrop-filter: blur(12px); }
+        .logo { font-size: 20px; font-weight: 800; background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px; }
+        .bal-badge { background: var(--bg-card); padding: 6px 14px; border-radius: 30px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); color: var(--text-white); cursor: pointer; position: relative; }
+        
+        .notif-dot { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; background: var(--danger); border-radius: 50%; display: none; }
+
+        .banner-con { margin: 20px; height: 160px; border-radius: 16px; overflow: hidden; position: relative; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2); border: 1px solid var(--border); }
+        .banner-wrap { display: flex; height: 100%; transition: transform 0.5s ease-in-out; will-change: transform; }
+        .banner-img { min-width: 100%; height: 100%; object-fit: cover; }
+
+        .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 0 20px; }
+        .cat-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; height: 120px; position: relative; overflow: hidden; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .cat-item:active { transform: scale(0.98); }
+        .cat-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }
+        .cat-item:hover .cat-img { transform: scale(1.05); }
+        .cat-name { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px 10px 10px; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, transparent 100%); font-size: 15px; font-weight: 700; color: white; text-align: center; z-index: 2; }
+
+        .profile-card { margin: 20px; padding: 25px; background: var(--primary-grad); border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3); position: relative; overflow: hidden; color: white; }
+        .profile-card::before { content:''; position: absolute; top:-50%; left:-50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%); pointer-events: none; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 20px 20px; }
+        .stats-box { background: var(--bg-card); padding: 15px 10px; border-radius: 12px; text-align: center; border: 1px solid var(--border); }
+        .stats-val { font-size: 17px; font-weight: 800; color: var(--primary); display: block; }
+        .stats-lbl { font-size: 10px; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .menu-list { padding: 0 20px; }
+        .menu-item { display: flex; align-items: center; padding: 16px; background: var(--bg-card); border-radius: 14px; margin-bottom: 12px; border: 1px solid var(--border); cursor: pointer; color: var(--text-white); transition: background 0.2s; }
+        .menu-icon { width: 35px; color: var(--primary); font-size: 18px; }
+
+        .tabs { margin: 20px; background: var(--bg-card); padding: 4px; border-radius: 12px; display: flex; border: 1px solid var(--border); }
+        .tab-btn { flex: 1; text-align: center; padding: 10px; font-size: 13px; color: var(--text-gray); border-radius: 8px; transition: 0.2s; cursor: pointer; }
+        .tab-btn.active { background: var(--bg-dark); color: var(--text-white); font-weight: 600; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+
+        .match-card { margin: 0 20px 20px; background: var(--bg-card); border-radius: 18px; border: 1px solid var(--border); overflow: hidden; position: relative; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .mc-banner { width: 100%; height: 120px; object-fit: cover; display: block; }
+        .mc-head { padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: linear-gradient(to right, rgba(99, 102, 241, 0.05), transparent); }
+        .mc-title { font-weight:700; font-size: 15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 65%; display:block; color: var(--text-white); }
+        .mc-badge { font-size:11px; padding:4px 8px; border-radius:8px; font-weight:600; background:rgba(99,102,241,0.1); color:var(--primary); border:1px solid rgba(99,102,241,0.2); }
+        
+        .mc-body { padding: 15px; }
+        .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+        .info-box { background: rgba(0,0,0,0.03); padding: 10px 5px; border-radius: 10px; text-align: center; border: 1px solid var(--border); overflow: hidden; }
+        .info-box .lbl { font-size: 9px; color: var(--text-gray); display: block; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-box .val { font-size: 13px; font-weight: 700; color: var(--text-white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        
+        .p-bar { height: 6px; background: var(--bg-dark); border-radius: 10px; overflow: hidden; margin-top: 15px; border: 1px solid var(--border); }
+        .p-fill { height: 100%; background: var(--primary-grad); width: 0%; border-radius: 10px; }
+        
+        .list-item { display: flex; align-items: center; padding: 15px; background: var(--bg-card); border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--border); color: var(--text-white); overflow: hidden; }
+        .li-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .rank-card { position: relative; border: none; padding: 15px; margin-bottom: 12px; border-radius: 14px; display: flex; align-items: center; color: white; overflow: hidden; }
+        .rank-1 { background: linear-gradient(135deg, #FFD700 0%, #FDB931 100%); box-shadow: 0 4px 15px rgba(253, 185, 49, 0.3); color: #000 !important; }
+        .rank-1 .r-txt { color: #000 !important; }
+        .rank-2 { background: linear-gradient(135deg, #E0E0E0 0%, #BDBDBD 100%); box-shadow: 0 4px 15px rgba(189, 189, 189, 0.3); color: #000 !important; }
+        .rank-2 .r-txt { color: #000 !important; }
+        .rank-3 { background: linear-gradient(135deg, #CD7F32 0%, #A0522D 100%); box-shadow: 0 4px 15px rgba(205, 127, 50, 0.3); }
+        .rank-norm { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-white); }
+        
+        .r-idx { font-size: 17px; font-weight: 800; width: 40px; text-align: center; }
+        .r-info { flex: 1; overflow: hidden; padding-right: 10px; }
+        .r-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+        .r-sub { font-size: 11px; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+        .r-prz { font-weight: 800; font-size: 14px; white-space: nowrap; }
+
+        .nav { position: absolute; bottom: 0; width: 100%; background: var(--bg-glass); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 12px 0; z-index: 100; backdrop-filter: blur(10px); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--text-gray); font-size: 10px; cursor: pointer; transition: 0.2s; }
+        .nav-item i { font-size: 19px; }
+        .nav-item.active { color: var(--primary); }
+
+        .fs-page { position: absolute; inset: 0; background: var(--bg-dark); z-index: 200; transform: translateX(100%); transition: transform 0.3s; overflow-y: auto; display: flex; flex-direction: column; }
+        .fs-page.show { transform: translateX(0); }
+        .fs-head { padding: 15px 20px; background: var(--bg-glass); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; font-size: 17px; font-weight: 600; position: sticky; top:0; z-index: 10; }
+        
+        .dialog-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; display:none; justify-content:center; align-items:center; }
+        .dialog-overlay.show { display: flex; }
+        .dialog-box { background:var(--bg-card); width:85%; max-width:320px; padding:25px; border-radius:20px; border:1px solid var(--border); color: var(--text-white); }
+
+        #loader { position:fixed; inset:0; background:var(--bg-dark); z-index:9999; display:flex; justify-content:center; align-items:center; }
+        .spinner { width: 45px; height: 45px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        
+        .marquee-con { background: var(--bg-card); padding: 10px; border-bottom: 1px solid var(--border); margin: 0 0 20px; overflow: hidden; white-space: nowrap; }
+        .marquee-text { display: inline-block; padding-left: 100%; animation: marquee 15s linear infinite; font-size: 13px; font-weight: 500; color: var(--text-white); }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+        
+        .auth-con { height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; width:100%; }
+        .auth-card { width:100%; max-width:380px; background:var(--bg-card); padding:30px; border-radius:20px; border:1px solid var(--border); }
+        
+        .countdown-badge { background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); color: var(--gold); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; text-align: center; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    </style>
+</head>
+<body>
+
+    <div id="loader"><div class="spinner"></div></div>
+
+    <div id="login-screen" class="auth-con hidden">
+        <div class="auth-card">
+            <div id="login-logo-con" style="text-align:center; margin-bottom:15px;">
+                <h1 id="login-logo-text" style="font-weight:800; font-size:26px;">DRAKE ESPORTS</h1>
+            </div>
+            <p style="text-align:center; color:gray; margin-bottom:25px; font-size:13px;">Login to Continue</p>
+            <form id="auth-form">
+                <input type="email" id="l-email" class="inp" placeholder="Email Address" required>
+                <input type="password" id="l-pass" class="inp" placeholder="Password" required>
+                <input type="text" id="l-name" class="inp hidden" placeholder="Display Name">
+                <input type="text" id="l-ref" class="inp hidden" placeholder="Referral Code (Optional)">
+                <button type="submit" class="btn btn-primary btn-full">ENTER ARENA</button>
+            </form>
+            <p style="text-align:center; margin-top:20px; font-size:13px; color:var(--text-gray); cursor:pointer;" onclick="toggleAuth()">
+                <span id="auth-toggle-text">Create New Account</span>
+            </p>
+        </div>
+    </div>
+
+    <div id="app" class="app-container hidden">
+        <header class="header">
+            <div class="logo" id="app-logo-con">DRAKE ESPORTS</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div class="bal-badge" onclick="openNotifications()" style="padding: 8px 10px; cursor:pointer;"><i class="fas fa-bell" style="color:var(--gold);"></i><span id="notif-dot" class="notif-dot"></span></div>
+                <div class="bal-badge" onclick="nav('wallet', this)"><i class="fas fa-wallet" style="color:var(--success)"></i> ₹<span id="u-bal">0</span></div>
+            </div>
+        </header>
+
+        <main id="main-content" style="padding-bottom: 20px;"></main>
+
+        <nav class="nav">
+            <div class="nav-item active" onclick="nav('home', this)"><i class="fas fa-home"></i> Home</div>
+            <div class="nav-item" onclick="nav('promo', this)"><i class="fas fa-bullhorn"></i> Promo</div>
+            <div class="nav-item" onclick="nav('rank', this)"><i class="fas fa-chart-bar"></i> Rank</div>
+            <div class="nav-item" onclick="nav('wallet', this)"><i class="fas fa-wallet"></i> Wallet</div>
+            <div class="nav-item" onclick="nav('profile', this)"><i class="fas fa-user"></i> Profile</div>
+        </nav>
+    </div>
+
+    <div id="fs-con" class="fs-page"></div>
+
+    <div id="alert" class="dialog-overlay">
+        <div class="dialog-box">
+            <h3 id="a-title" style="margin-bottom:10px;">Alert</h3>
+            <div id="a-msg" style="margin-bottom:25px; font-size:14px; color:var(--text-gray);"></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-outline btn-full hidden" id="a-can">Cancel</button>
+                <button class="btn btn-primary btn-full" id="a-ok">OK</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="theme-mod" class="dialog-overlay">
+        <div class="dialog-box">
+            <h3>Select Theme</h3>
+            <div style="margin-top:15px; display:grid; gap:10px;">
+                <button class="btn btn-outline" onclick="setTheme('light')" style="background:white; color:black;">Day Light</button>
+                <button class="btn btn-outline" onclick="setTheme('midnight')" style="background:#0f172a; color:#3b82f6; border-color:#3b82f6;">Midnight Blue</button>
+                <button class="btn btn-outline" onclick="setTheme('')" style="background:#18181b; color:white;">Cyber Dark (Default)</button>
+            </div>
+            <button class="btn btn-primary btn-full" style="margin-top:15px;" onclick="closeMod('theme-mod')">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyB1D77o3XLScwfJjyUUKN9QiNS-fz7VLAo",
+          authDomain: "chicken-esports-6b8f2.firebaseapp.com",
+          databaseURL: "https://chicken-esports-6b8f2-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "chicken-esports-6b8f2",
+          storageBucket: "chicken-esports-6b8f2.firebasestorage.app",
+          messagingSenderId: "1075042111637",
+          appId: "1:1075042111637:web:b9b62ee3b4e98df2568b9c"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        let user = null, userData = { balance: 0 }, d = {cats:{}, mats:{}, promos:{}, ranks:{}, conf:{}};
+        let currentCatId = null;
+        let countdownTimerInterval = null;
+
+        const savedTheme = localStorage.getItem('theme');
+        if(savedTheme) document.body.className = savedTheme;
+
+        auth.onAuthStateChanged(u => {
+            if(u) {
+                user = u;
+                db.ref(`users/${u.uid}`).on('value', s => {
+                    userData = s.val() || {};
+                    if(userData.balance === undefined || userData.balance === null) userData.balance = 0;
+                    document.getElementById('u-bal').innerText = userData.balance;
+                    if(!userData.referralCode && userData.displayName) {
+                        const code = userData.displayName.substring(0,3).toUpperCase() + Math.floor(1000 + Math.random() * 9000);
+                        db.ref(`users/${u.uid}/referralCode`).set(code);
+                        db.ref(`referralCodes/${code}`).set(u.uid);
+                    }
+                    initApp();
+                });
+                checkUnreadNotifications();
+            } else {
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('app').classList.add('hidden');
+            }
+        });
+
+        function initApp() {
+            db.ref('appConfig').on('value', s => { 
+                d.conf = s.val() || {}; 
+                applyBranding();
+                if(isTab('home')) renderHome(); 
+            });
+            db.ref('categories').on('value', s => { d.cats = s.val() || {}; if(isTab('home')) renderHome(); });
+            db.ref('tournaments').on('value', s => { d.mats = s.val() || {}; if(isTab('home')) renderHome(); });
+            db.ref('promos').on('value', s => { d.promos = s.val() || {}; if(isTab('promo')) renderPromo(); });
+            db.ref('custom_leaderboard').on('value', s => { d.ranks = s.val() || {}; if(isTab('rank')) renderRank(); });
+            
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            if(!document.getElementById('main-content').innerHTML) renderHome();
+        }
+
+        function checkUnreadNotifications() {
+            db.ref('notifications').on('value', s => {
+                if(s.exists()) {
+                    const notifs = Object.values(s.val());
+                    const lastSeen = localStorage.getItem('last_seen_notif') || 0;
+                    const hasNew = notifs.some(n => n.timestamp > Number(lastSeen));
+                    const dot = document.getElementById('notif-dot');
+                    if(dot) dot.style.display = hasNew ? 'block' : 'none';
+                }
+            });
+        }
+
+        window.openNotifications = async () => {
+            localStorage.setItem('last_seen_notif', Date.now());
+            const dot = document.getElementById('notif-dot');
+            if(dot) dot.style.display = 'none';
+
+            const snap = await db.ref('notifications').limitToLast(20).once('value');
+            let h = '';
+            if(snap.exists()) {
+                const list = []; snap.forEach(c => list.push(c.val()));
+                list.reverse().forEach(n => {
+                    h += `
+                    <div class="list-item" style="display:block; margin-bottom:12px;">
+                        <div style="font-size:11px; color:var(--text-gray); margin-bottom:4px;">${new Date(n.timestamp).toLocaleString()}</div>
+                        <div style="font-size:14px; font-weight:600; margin-bottom:8px;">${n.message}</div>
+                        ${n.image ? `<img src="${n.image}" style="width:100%; max-height:160px; object-fit:cover; border-radius:8px; margin-bottom:8px;">` : ''}
+                        ${n.link ? `<a href="${n.link}" target="_blank" class="btn btn-outline" style="font-size:12px; padding:8px 12px; display:inline-block;">Open Link <i class="fas fa-external-link-alt"></i></a>` : ''}
+                    </div>`;
+                });
+            } else {
+                h = '<p style="text-align:center; color:gray; padding:30px;">No notifications available.</p>';
+            }
+
+            document.getElementById('fs-con').innerHTML = `
+                <div class="fs-head"><i class="fas fa-arrow-left" onclick="closeFs()"></i> Notifications</div>
+                <div style="padding:20px;">${h}</div>`;
+            document.getElementById('fs-con').classList.add('show');
+        }
+
+        function applyBranding() {
+            const name = d.conf.appName || 'DRAKE ESPORTS';
+            const logo = d.conf.logoUrl;
+            document.title = name;
+            
+            const headerLogo = document.getElementById('app-logo-con');
+            if(headerLogo) {
+                if(logo) {
+                    headerLogo.innerHTML = `<img src="${logo}" style="height:26px;vertical-align:middle;object-fit:contain;margin-right:6px;"> ${name}`;
+                } else {
+                    headerLogo.innerText = name;
+                }
+            }
+
+            const loginTitle = d.conf.loginTitle || name;
+            const loginLogo = d.conf.loginLogoUrl || logo;
+            const loginLogoCon = document.getElementById('login-logo-con');
+            if(loginLogoCon) {
+                if(loginLogo) {
+                    loginLogoCon.innerHTML = `<img src="${loginLogo}" style="height:45px;object-fit:contain;margin-bottom:8px;"><h1 style="font-weight:800; font-size:22px;">${loginTitle}</h1>`;
+                } else {
+                    loginLogoCon.innerHTML = `<h1 style="font-weight:800; font-size:22px;">${loginTitle}</h1>`;
+                }
+            }
+        }
+
+        function isTab(name) { return document.querySelector(`.nav-item.active`).innerText.toLowerCase().includes(name); }
+
+        window.nav = (p, el) => {
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+            if(el) el.classList.add('active');
+            else document.querySelectorAll('.nav-item').forEach(e => { if(e.innerText.toLowerCase().includes(p)) e.classList.add('active'); });
+
+            if(p === 'home') renderHome();
+            if(p === 'promo') renderPromo();
+            if(p === 'rank') renderRank();
+            if(p === 'wallet') renderWallet();
+            if(p === 'profile') renderProfile();
+        }
+
+        function renderHome() {
+            let bannerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:gray;">Welcome</div>';
+            if(d.conf.banners) {
+                const slides = Object.values(d.conf.banners).map(u => `<div style="min-width:100%;height:100%;"><img src="${u}" class="banner-img"></div>`).join('');
+                bannerHTML = `<div class="banner-wrap">${slides}</div>`;
+            }
+            let catsHTML = '';
+            Object.entries(d.cats).forEach(([k,c]) => {
+                catsHTML += `<div class="cat-item" onclick="openCat('${k}','${c.name}')"><img src="${c.image}" class="cat-img"><div class="cat-name">${c.name}</div></div>`;
+            });
+            document.getElementById('main-content').innerHTML = `<div class="banner-con">${bannerHTML}</div><div style="padding:0 20px; margin-bottom:15px; font-weight:600; font-size:17px;">Select Game</div><div class="cat-grid">${catsHTML}</div>`;
+            const w = document.querySelector('.banner-wrap');
+            if(w && w.children.length > 1) { let i = 0; if(window.banInt) clearInterval(window.banInt); window.banInt = setInterval(() => { i = (i+1)%w.children.length; w.style.transform = `translateX(-${i*100}%)`; }, 3500); }
+        }
+
+        window.openCat = (id, name) => {
+            currentCatId = id;
+            const f = document.getElementById('fs-con');
+            f.innerHTML = `
+                <div class="fs-head"><i class="fas fa-arrow-left" onclick="closeFs()"></i> <span class="mc-title" style="flex:1;">${name}</span></div>
+                <div class="tabs">
+                    <div class="tab-btn active" onclick="filterM('Upcoming', this)">Upcoming</div>
+                    <div class="tab-btn" onclick="filterM('Live', this)">Live</div>
+                    <div class="tab-btn" onclick="filterM('Complete', this)">Results</div>
+                </div>
+                <div id="cp-list" style="padding-bottom:20px;"></div>
+            `;
+            f.classList.add('show');
+            filterM('Upcoming', f.querySelector('.tab-btn'));
+        }
+
+        window.filterM = (st, btn) => {
+            if(btn) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+            const l = document.getElementById('cp-list');
+            l.innerHTML = '';
+            const matches = Object.entries(d.mats).filter(([_, t]) => t.category === currentCatId && t.status === st);
+            if(matches.length === 0) { l.innerHTML = `<div style="text-align:center;padding:50px;color:gray;">No ${st} matches.</div>`; return; }
+            
+            if(countdownTimerInterval) clearInterval(countdownTimerInterval);
+
+            matches.forEach(([id, t]) => {
+                const j = t.joinedPlayers ? Object.keys(t.joinedPlayers).length : 0;
+                const prog = (j / t.totalSlots) * 100;
+                const isJ = t.joinedPlayers && t.joinedPlayers[user.uid];
+                const isCheckedIn = t.checkedInPlayers && t.checkedInPlayers[user.uid];
+                
+                let btnHtml = '';
+                if(st === 'Upcoming') {
+                    if(isJ) {
+                        if(t.checkinEnabled) {
+                            if(isCheckedIn) {
+                                btnHtml = `<button class="btn btn-full btn-outline" style="color:var(--success); border-color:var(--success);" disabled><i class="fas fa-check-circle"></i> CHECKED IN</button>`;
+                            } else {
+                                btnHtml = `<button class="btn btn-full btn-primary" onclick="checkInMatch('${id}')">CHECK-IN NOW</button>`;
+                            }
+                        } else {
+                            btnHtml = `<button class="btn btn-full btn-outline" disabled>JOINED</button>`;
+                        }
+                    }
+                    else if(j >= t.totalSlots) btnHtml = `<button class="btn btn-full btn-danger" disabled>FULL</button>`;
+                    else btnHtml = `<button class="btn btn-primary btn-full" onclick="join('${id}')">JOIN</button>`;
+                } else if(st === 'Live') {
+                    if(t.checkinEnabled && !isCheckedIn && isJ) {
+                        btnHtml = `<button class="btn btn-full btn-danger" disabled>MISSED CHECK-IN</button>`;
+                    } else {
+                        btnHtml = `<button class="btn btn-primary btn-full" onclick="room('${id}')">ROOM ID & PASS</button>`;
+                    }
+                } else btnHtml = `<button class="btn btn-outline btn-full" onclick="res('${id}')">RESULTS</button>`;
+
+                l.innerHTML += `
+                    <div class="match-card">
+                        ${t.matchBanner ? `<img src="${t.matchBanner}" class="mc-banner">` : ''}
+                        <div class="mc-head">
+                            <span class="mc-title">${t.title}</span>
+                            <span class="mc-badge">${st}</span>
+                        </div>
+                        <div class="mc-body">
+                            ${st === 'Upcoming' ? `<div class="countdown-badge" data-time="${t.dateTime}"><i class="fas fa-clock"></i> Starts in: <span class="c-timer">Calculated...</span></div>` : ''}
+                            <div class="info-grid">
+                                <div class="info-box"><span class="lbl">Prize</span><span class="val" style="color:var(--gold)">₹${t.prizePool}</span></div>
+                                <div class="info-box"><span class="lbl">Fee</span><span class="val">₹${t.entryFee}</span></div>
+                                <div class="info-box"><span class="lbl">Type</span><span class="val">${t.map || 'Solo'}</span></div>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-gray); margin-top:5px;"><span>${j}/${t.totalSlots} Joined</span><span>${new Date(t.dateTime).toLocaleDateString()}</span></div>
+                            <div class="p-bar"><div class="p-fill" style="width:${prog}%"></div></div>
+                            <div style="margin-top:15px; display:flex; gap:10px;"><button class="btn btn-outline" onclick="alertMsg('Rules', '${(t.rules||'No Rules').replace(/'/g, "\\'")}')">RULES</button><div style="flex:1">${btnHtml}</div></div>
+                        </div>
+                    </div>`;
+            });
+
+            countdownTimerInterval = setInterval(() => {
+                document.querySelectorAll('.countdown-badge').forEach(el => {
+                    const targetTime = Number(el.dataset.time);
+                    const now = Date.now();
+                    const diff = targetTime - now;
+                    const timerSpan = el.querySelector('.c-timer');
+                    if(diff <= 0) {
+                        timerSpan.innerText = "Starting Soon / Live";
+                    } else {
+                        const hours = Math.floor(diff / (1000 * 60 * 60));
+                        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                        timerSpan.innerText = `${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
+                    }
+                });
+            }, 1000);
+        }
+
+        window.checkInMatch = async (id) => {
+            await db.ref(`tournaments/${id}/checkedInPlayers/${user.uid}`).set(true);
+            alertMsg('Success', 'Successfully checked in! Room credentials will unlock for you when the match goes live.');
+            closeFs();
+        }
+
+        function renderPromo() {
+            const p = d.promos;
+            let bannerHTML = '';
+            if(p.banners) {
+                 const slides = Object.values(p.banners).map(b => `<div style="min-width:100%;height:100%;" onclick="if('${b.link}') window.open('${b.link}')"><img src="${b.url}" class="banner-img"></div>`).join('');
+                 bannerHTML = `<div class="banner-wrap">${slides}</div>`;
+            }
+            let newsHTML = '';
+            if(p.news) Object.values(p.news).reverse().forEach(n => {
+                newsHTML += `<div class="list-item" style="display:block;"><div class="li-title">${n.title}</div><div style="font-size:13px; color:var(--text-gray); margin-top:5px;">${n.body}</div></div>`;
+            });
+            document.getElementById('main-content').innerHTML = `
+                <div class="marquee-con"><span class="marquee-text">${p.announcement || 'Welcome to Drake Esports!'}</span></div>
+                <div class="banner-con" style="margin-top:0;">${bannerHTML}</div>
+                <div style="padding:0 20px; margin-top:20px;"><h3 style="margin-bottom:15px; border-left:4px solid var(--primary); padding-left:10px; font-size:17px;">Latest News</h3>${newsHTML || '<p style="color:gray">No news yet.</p>'}</div>`;
+            const w = document.querySelector('.banner-wrap');
+            if(w && w.children.length > 1) { let i = 0; if(window.promInt) clearInterval(window.promInt); window.promInt = setInterval(() => { i = (i+1)%w.children.length; w.style.transform = `translateX(-${i*100}%)`; }, 3500); }
+        }
+
+        function renderRank() {
+            const list = Object.values(d.ranks || {}).sort((a,b) => a.rank - b.rank);
+            let html = '';
+            list.forEach(u => {
+                let rankClass = 'rank-norm';
+                let icon = `#${u.rank}`;
+                if(u.rank == 1) { rankClass = 'rank-1'; icon = '<i class="fas fa-trophy"></i>'; }
+                else if(u.rank == 2) { rankClass = 'rank-2'; icon = '<i class="fas fa-medal"></i>'; }
+                else if(u.rank == 3) { rankClass = 'rank-3'; icon = '<i class="fas fa-award"></i>'; }
+                
+                let safeEmail = "No Email";
+                if(u.email) {
+                    let parts = u.email.split('@');
+                    safeEmail = parts.length > 1 ? parts[0].substring(0,2) + "****@" + parts[1] : "****";
+                }
+
+                html += `
+                <div class="rank-card ${rankClass}">
+                    <div class="r-idx">${icon}</div>
+                    <div class="r-info">
+                        <div class="r-name r-txt">${u.displayName}</div>
+                        <div class="r-sub r-txt">${safeEmail}</div>
+                    </div>
+                    <div class="r-prz r-txt">₹${u.winAmount}</div>
+                </div>`;
+            });
+            document.getElementById('main-content').innerHTML = `
+                <div style="text-align:center; padding:30px 20px;">
+                    <i class="fas fa-trophy" style="font-size:36px; color:var(--gold); margin-bottom:10px;"></i><h2>Leaderboard</h2><p style="color:var(--text-gray); font-size:13px;">Top Players of the Season</p>
+                </div><div style="padding:0 20px;">${html}</div>`;
+        }
+
+        async function renderWallet() {
+            const bal = userData.balance !== undefined ? userData.balance : 0;
+            document.getElementById('main-content').innerHTML = `
+                <div class="profile-card">
+                    <div style="font-size:13px; opacity:0.8; letter-spacing:1px;">TOTAL BALANCE</div>
+                    <div style="font-size:34px; font-weight:800; margin:5px 0 20px;">₹${bal}</div>
+                    <div style="display:flex; gap:12px;">
+                        <button class="btn btn-full" style="background:white; color:var(--primary);" onclick="openDep()">Add Cash</button>
+                        <button class="btn btn-full btn-outline" style="color:white; border-color:white;" onclick="openWd()">Withdraw</button>
+                    </div>
+                </div>
+                <h3 style="margin:0 20px 15px; font-size:17px;">Transactions</h3>
+                <div id="tx-list" style="padding:0 20px; padding-bottom:20px;"><div style="display:flex;justify-content:center;height:100px;align-items:center;"><div class="spinner"></div></div></div>`;
+            
+            const snap = await db.ref(`transactions/${user.uid}`).limitToLast(50).once('value');
+            let txH = '';
+            if(snap.exists()) {
+                const txs = []; snap.forEach(c => txs.push(c.val()));
+                txs.reverse().forEach(t => {
+                    const isPlus = ['Deposit','Winnings','Signup Bonus','Referral Bonus'].includes(t.type);
+                    txH += `<div class="list-item"><div><div style="font-weight:600; font-size:14px;">${t.type}</div><div style="font-size:11px; color:gray;">${new Date(t.timestamp).toLocaleDateString()}</div></div><div style="margin-left:auto;font-weight:bold;color:${isPlus?'var(--success)':'var(--danger)'}">${isPlus?'+':'-'} ₹${t.amount}</div></div>`;
+                });
+            } else txH = '<div style="text-align:center;color:gray;padding:20px;">No transactions found.</div>';
+            document.getElementById('tx-list').innerHTML = txH;
+        }
+
+        function renderProfile() {
+            const bal = userData.balance !== undefined ? userData.balance : 0;
+            let earned = userData.winnings || 0;
+            document.getElementById('main-content').innerHTML = `
+                <div class="profile-card">
+                    <div style="font-size:13px; opacity:0.8; letter-spacing:1px;">TOTAL BALANCE</div>
+                    <div style="font-size:34px; font-weight:800; margin:5px 0 20px;">₹${bal}</div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stats-box"><span class="stats-val">${userData.totalReferrals||0}</span><span class="stats-lbl">Refs</span></div>
+                    <div class="stats-box"><span class="stats-val" style="color:var(--success)">₹${earned}</span><span class="stats-lbl">Won</span></div>
+                    <div class="stats-box"><span class="stats-val" style="color:var(--text-white)">${(userData.displayName||'User').substring(0,6)}..</span><span class="stats-lbl">User</span></div>
+                </div>
+                <div class="menu-list">
+                    <div class="menu-item" onclick="openEditProfile()"><i class="fas fa-user-cog menu-icon"></i><span>Edit Profile</span></div>
+                    <div class="menu-item" onclick="openRefer()"><i class="fas fa-gift menu-icon" style="color:var(--gold)"></i><span>Refer & Earn</span></div>
+                    <div class="menu-item" onclick="document.getElementById('theme-mod').classList.add('show')"><i class="fas fa-palette menu-icon"></i><span>Change Theme</span></div>
+                    <div class="menu-item" onclick="nav('wallet')"><i class="fas fa-history menu-icon"></i><span>Transactions</span></div>
+                    <div class="menu-item" onclick="openSupport()"><i class="fas fa-headset menu-icon"></i><span>Support & Community</span></div>
+                    <div class="menu-item" onclick="auth.signOut()"><i class="fas fa-sign-out-alt menu-icon" style="color:var(--danger)"></i><span style="color:var(--danger)">Logout</span></div>
+                </div>`;
+        }
+
+        window.openDep = () => {
+            const upiId = d.conf.upiId || 'Not Set';
+            const qrUrl = d.conf.qrUrl || '';
+            document.getElementById('fs-con').innerHTML = `
+                <div class="fs-head"><i class="fas fa-arrow-left" onclick="closeFs()"></i> Manual Deposit</div>
+                <div style="padding:20px; text-align:center;">
+                    <div style="background:var(--bg-card); padding:20px; border-radius:15px; border:1px solid var(--border); margin-bottom:20px;">
+                        <p style="font-size:13px; color:var(--text-gray); margin-bottom:10px;">Scan QR or Pay to UPI ID</p>
+                        ${qrUrl ? `<img src="${qrUrl}" style="width:150px; height:150px; object-fit:contain; background:white; padding:10px; border-radius:10px; margin-bottom:10px;">` : ''}
+                        <div style="font-weight:700; font-size:15px; color:var(--primary); margin-bottom:5px;" onclick="cpy('${upiId}')">${upiId} <i class="far fa-copy"></i></div>
+                    </div>
+                    <input id="d-amt" type="number" class="inp" placeholder="Enter Deposit Amount (₹)">
+                    <input id="d-utr" type="text" class="inp" placeholder="Enter UTR / Transaction ID">
+                    <p style="text-align:left; font-size:12px; color:var(--text-gray); margin-bottom:5px;">Payment Screenshot URL</p>
+                    <input id="d-screenshot" type="text" class="inp" placeholder="Paste Image URL of Receipt">
+                    <button class="btn btn-primary btn-full" onclick="submitDeposit()">Submit Deposit Request</button>
+                </div>`;
+            document.getElementById('fs-con').classList.add('show');
+        }
+
+        window.submitDeposit = async () => {
+            const amt = Number(document.getElementById('d-amt').value);
+            const utr = document.getElementById('d-utr').value.trim();
+            const screenshot = document.getElementById('d-screenshot').value.trim();
+
+            if(!amt || amt <= 0 || !utr) {
+                alert('Please enter a valid amount and UTR/Transaction ID.');
+                return;
+            }
+
+            document.getElementById('loader').classList.remove('hidden');
+            try {
+                await db.ref('depositRequests').push({
+                    userId: user.uid,
+                    displayName: userData.displayName || user.email,
+                    amount: amt,
+                    utr: utr,
+                    screenshot: screenshot,
+                    status: 'Pending',
+                    timestamp: Date.now()
+                });
+                document.getElementById('loader').classList.add('hidden');
+                closeFs();
+                alertMsg('Submitted', 'Your deposit request has been submitted. Admin will verify and credit your balance.');
+            } catch(e) {
+                document.getElementById('loader').classList.add('hidden');
+                alert('Error: ' + e.message);
+            }
+        };
+
+        window.openWd = () => {
+            const bal = userData.balance !== undefined ? userData.balance : 0;
+            document.getElementById('fs-con').innerHTML = `
+                <div class="fs-head"><i class="fas fa-arrow-left" onclick="closeFs()"></i> Withdraw</div>
+                <div style="padding:20px;">
+                    <div style="background:rgba(16, 185, 129, 0.1); padding:15px; border-radius:10px; border:1px solid rgba(16, 185, 129, 0.3); margin-bottom:20px; text-align:center;">Available: ₹${bal}</div>
+                    <input id="w-amt" type="number" class="inp" placeholder="Amount (Min ₹50)">
+                    <input id="w-upi" class="inp" placeholder="Your UPI ID">
+                    <button class="btn btn-primary btn-full" onclick="subWd()">Withdraw Money</button>
+                </div>`;
+            document.getElementById('fs-con').classList.add('show');
+        }
+
+        window.subWd = async () => {
+            const a = Number(document.getElementById('w-amt').value), u = document.getElementById('w-upi').value;
+            const bal = userData.balance !== undefined ? userData.balance : 0;
+            if(a < 50) return alert('Min withdrawal ₹50');
+            if(a > bal) return alert('Insufficient Balance');
+            await db.ref(`users/${user.uid}/balance`).set(bal - a);
+            await db.ref('withdrawalRequests').push({ userId:user.uid, displayName:userData.displayName||'Player', amount:a, details:{upiId:u}, status:'Pending', timestamp:Date.now() });
+            await db.ref(`transactions/${user.uid}`).push({ type:'Withdrawal', amount:a, timestamp:Date.now() });
+            closeFs(); alertMsg('Success', 'Request submitted.');
+        }
+
+        window.openEditProfile = () => {
+            document.getElementById('fs-con').innerHTML = `
+                <div class="fs-head"><i class="fas fa-arrow-left" onclick="closeFs()"></i> Edit Profile</div>
+                <div style="padding:20px;">
+                    <p style="color:gray; font-size:12px; margin-bottom:5px;">Email (Locked)</p>
+                    <input class="inp" value="${user.email}" disabled>
+                    <p style="color:gray; font-size:12px; margin-bottom:5px;">Display Name</p>
+                    <input id="ep-name" class="inp" value="${userData.displayName||''}">
+                    <p style="color:gray; font-size:12px; margin-bottom:5px;">Game ID (BGMI)</p>
+                    <input id="ep-uid" class="inp" value="${userData.playerUid||''}">
+                    <button class="btn btn-primary btn-full" onclick="saveProfile()">Save Changes</button>
+                </div>`;
+            document.getElementById('fs-con').classList.add('show');
+        }
+        window.saveProfile = async () => {
+            await db.ref(`users/${user.uid}`).update({ displayName: document.getElementById('ep-name').value, playerUid: document.getElementById('ep-uid').value });
+            closeFs(); renderProfile();
+        }
+
+        window.openSupport = () => {
+             const wa = d.conf.whatsapp || '#';
+             const tg = d.conf.telegram || '#';
+             const dc = d.conf.discord || '#';
+             const yt = d.conf.youtube || '#';
+             document.getElementById('fs-con').innerHTML = `
+                <div class="fs-head"><i class="fas fa-arrow-left" onclick="closeFs()"></i> Support & Community</div>
+                <div style="padding:20px;">
+                    <button class="btn btn-full" style="background:#25D366; margin-bottom:12px;" onclick="window.open('${wa}')"><i class="fab fa-whatsapp"></i> WhatsApp Support</button>
+                    <button class="btn btn-full" style="background:#0088cc; margin-bottom:12px;" onclick="window.open('${tg}')"><i class="fab fa-telegram-plane"></i> Telegram Channel</button>
+                    <button class="btn btn-full" style="background:#5865F2; margin-bottom:12px;" onclick="window.open('${dc}')"><i class="fab fa-discord"></i> Discord Server</button>
+                    <button class="btn btn-full" style="background:#FF0000; margin-bottom:25px;" onclick="window.open('${yt}')"><i class="fab fa-youtube"></i> YouTube Channel</button>
+                    
+                    <hr style="border-color:var(--border); margin-bottom:20px;">
+                    
+                    <h3 style="font-size:16px; margin-bottom:10px;">Submit a Support Ticket</h3>
+                    <input id="t-subject" class="inp" placeholder="Subject (e.g. Missing Prize)">
+                    <textarea id="t-msg" class="inp" placeholder="Describe your issue..." rows="3"></textarea>
+                    <button class="btn btn-primary btn-full" onclick="submitTicket()">Send Support Ticket</button>
+                </div>`;
+             document.getElementById('fs-con').classList.add('show');
+        }
+
+        window.submitTicket = async () => {
+            const subject = document.getElementById('t-subject').value.trim();
+            const message = document.getElementById('t-msg').value.trim();
+            if(!subject || !message) return alert('Please enter subject and message.');
+            
+            await db.ref('supportTickets').push({
+                userId: user.uid,
+                userName: userData.displayName || user.email,
+                subject,
+                message,
+                status: 'Open',
+                timestamp: Date.now()
+            });
+            alertMsg('Ticket Sent', 'Our support team has received your ticket and will respond soon.');
+            closeFs();
+        }
+
+        window.openRefer = () => {
+             const code = userData.referralCode || '...';
+             const earned = userData.referralEarnings || 0;
+             const count = userData.totalReferrals || 0;
+             document.getElementById('fs-con').innerHTML = `
+                <div class="fs-head"><i class="fas fa-arrow-left" onclick="closeFs()"></i> Refer & Earn</div>
+                <div style="padding:20px; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3893/3893069.png" style="width:110px; margin-bottom:20px;">
+                    <h2 style="margin-bottom:10px; color:var(--text-white); font-size:20px;">Invite Friends</h2>
+                    <p style="color:var(--text-gray); font-size:13px; margin-bottom:30px;">Share your code. When they sign up, you both get rewards!</p>
+                    <div style="background:var(--bg-card); border:1px dashed var(--primary); padding:15px 30px; border-radius:10px; margin-bottom:20px; font-family:monospace; font-size:22px; font-weight:700; color:var(--primary); cursor:pointer;" onclick="cpy('${code}')">${code} <i class="far fa-copy"></i></div>
+                    <button class="btn btn-primary btn-full" onclick="shareRef('${code}')"><i class="fas fa-share-alt"></i> Share Code</button>
+                    <div style="display:flex; gap:15px; width:100%; margin-top:35px;">
+                        <div class="stats-box" style="flex:1"><span class="stats-val">${count}</span><span class="stats-lbl">Referred</span></div>
+                        <div class="stats-box" style="flex:1"><span class="stats-val" style="color:var(--gold)">₹${earned}</span><span class="stats-lbl">Earnings</span></div>
+                    </div>
+                </div>`;
+             document.getElementById('fs-con').classList.add('show');
+        }
+        window.shareRef = (c) => {
+            const msg = `Join me on Drake Esports! Use code ${c} for bonus.`;
+            if(navigator.share) navigator.share({title:'Invite', text:msg}); else cpy(msg);
+        }
+
+        window.join = (id) => {
+            const t = d.mats[id];
+            const bal = userData.balance !== undefined ? userData.balance : 0;
+            if(!userData.playerUid) return alertMsg('Error', 'Please set Game ID in Profile first.');
+            if(bal < t.entryFee) return alertMsg('Low Balance', 'Please add money to wallet.');
+            if(confirm(`Join match for ₹${t.entryFee}?`)) {
+                db.ref(`users/${user.uid}/balance`).set(bal - t.entryFee);
+                db.ref(`tournaments/${id}/joinedPlayers/${user.uid}`).set({ displayName: userData.displayName || 'Player', playerUid: userData.playerUid, uid: user.uid });
+                db.ref(`transactions/${user.uid}`).push({ type:'Join Match', amount:t.entryFee, timestamp:Date.now() });
+                alertMsg('Success', 'Joined Successfully');
+                openCat(t.category, 'Matches'); 
+            }
+        }
+        window.room = (id) => { const t = d.mats[id]; alertMsg('Room Info', `ID: ${t.roomId || 'Wait'}<br>Pass: ${t.password || 'Wait'}`); }
+        
+        window.res = async (id) => {
+             const s = await db.ref(`winners/${id}`).once('value');
+             let h = '<div style="padding:20px;">';
+             if(s.exists()) {
+                 Object.values(s.val()).sort((a,b)=>a.rank-b.rank).forEach(p => {
+                    let rankClass = 'rank-norm';
+                    let icon = `#${p.rank}`;
+                    if(p.rank == 1) { rankClass = 'rank-1'; icon = '<i class="fas fa-trophy"></i>'; }
+                    else if(p.rank == 2) { rankClass = 'rank-2'; icon = '<i class="fas fa-medal"></i>'; }
+                    else if(p.rank == 3) { rankClass = 'rank-3'; icon = '<i class="fas fa-award"></i>'; }
+                    
+                    h += `
+                    <div class="rank-card ${rankClass}">
+                        <div class="r-idx">${icon}</div>
+                        <div class="r-info">
+                            <div class="r-name r-txt">${p.displayName}</div>
+                            <div class="r-sub r-txt">${p.playerUid}</div>
+                        </div>
+                        <div class="r-prz r-txt">+₹${p.prize}</div>
+                    </div>`;
+                 });
+             } else h += '<p style="text-align:center; color:gray;">Results not declared yet.</p>';
+             document.getElementById('fs-con').innerHTML = `<div class="fs-head"><i class="fas fa-arrow-left" onclick="closeFs()"></i> Results</div>${h}</div>`;
+             document.getElementById('fs-con').classList.add('show');
+        }
+
+        window.cpy = (text) => {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => alert('Copied!')).catch(() => fallbackCopy(text));
+            } else fallbackCopy(text);
+        }
+        function fallbackCopy(text) {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand("copy"); alert('Copied!'); } catch (err) { alert('Failed to copy'); }
+            document.body.removeChild(ta);
+        }
+
+        window.closeFs = () => document.getElementById('fs-con').classList.remove('show');
+        window.closeMod = (id) => document.getElementById(id).classList.remove('show');
+        window.alertMsg = (t, m) => { document.getElementById('a-title').innerText=t; document.getElementById('a-msg').innerHTML=m; document.getElementById('a-ok').onclick=()=>{document.getElementById('alert').classList.remove('show')}; document.getElementById('alert').classList.add('show'); }
+        window.setTheme = (t) => { if(t) {document.body.className=t+'-mode'; localStorage.setItem('theme',t+'-mode');} else {document.body.className=''; localStorage.setItem('theme','');} closeMod('theme-mod'); }
+
+        window.toggleAuth = () => {
+            document.getElementById('l-name').classList.toggle('hidden');
+            document.getElementById('l-ref').classList.toggle('hidden');
+            const isReg = !document.getElementById('l-name').classList.contains('hidden');
+            document.getElementById('auth-toggle-text').innerText = isReg ? 'Back to Login' : 'Create New Account';
+        }
+        document.getElementById('auth-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const em=document.getElementById('l-email').value, ps=document.getElementById('l-pass').value, nm=document.getElementById('l-name').value;
+            const refCode = document.getElementById('l-ref').value.trim().toUpperCase();
+            document.getElementById('loader').classList.remove('hidden');
+            try {
+                if(!document.getElementById('l-name').classList.contains('hidden')) {
+                    let referrerUid = null;
+                    if(refCode) {
+                        const snap = await db.ref(`referralCodes/${refCode}`).once('value');
+                        if(!snap.exists()) throw new Error('Invalid Referral Code');
+                        referrerUid = snap.val();
+                    }
+                    const cred = await auth.createUserWithEmailAndPassword(em, ps);
+                    await cred.user.updateProfile({displayName:nm});
+                    const myCode = nm.substring(0,3).toUpperCase() + Math.floor(1000 + Math.random() * 9000);
+                    await db.ref(`users/${cred.user.uid}`).set({ displayName: nm, email: em, balance: 0, playerUid: '', referralCode: myCode, totalReferrals: 0 });
+                    await db.ref(`referralCodes/${myCode}`).set(cred.user.uid);
+                    if(referrerUid && d.conf.referralBonus > 0) await db.ref('referralRequests').push({ referrerUid: referrerUid, newUserId: cred.user.uid, newUserName: nm, amount: Number(d.conf.referralBonus), status: 'Pending', timestamp: Date.now() });
+                    if(d.conf.signupBonus > 0) {
+                         await db.ref(`users/${cred.user.uid}/balance`).set(Number(d.conf.signupBonus));
+                         await db.ref(`transactions/${cred.user.uid}`).push({type:'Signup Bonus', amount:Number(d.conf.signupBonus), timestamp:Date.now()});
+                    }
+                } else await auth.signInWithEmailAndPassword(em, ps);
+            } catch(e) { alert(e.message); document.getElementById('loader').classList.add('hidden'); }
+        }
+    </script>
+</body>
+</html>
